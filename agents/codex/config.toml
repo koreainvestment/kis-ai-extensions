@@ -1,0 +1,69 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+
+# Approval prefix rules are read from $CODEX_HOME/rules/default.rules.
+# Run Codex with CODEX_HOME set to this project's .codex directory to keep
+# approvals project-local (see ./codex-local.sh).
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_fallback_filenames = ["AGENTS.md"]
+
+# MCP 서버 — url만으로 HTTP 자동 인식 (type 불필요)
+[mcp_servers.kis-backtest]
+url = "http://127.0.0.1:3846/mcp"
+enabled = true
+startup_timeout_sec = 10
+tool_timeout_sec = 120  # 백테스팅 최대 실행 시간
+
+# Skills 경로 명시 (Codex는 .agents/skills/ 자동 탐색 불가, 명시 필요)
+[[skills.config]]
+path = ".codex/skills/kis-strategy-builder"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-backtester"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-order-executor"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-team"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-cs"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/auth"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/my-status"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-setup"
+enabled = true
+
+[[skills.config]]
+path = ".codex/skills/kis-help"
+enabled = true
+
+[shell_environment_policy]
+inherit = "core"
+exclude = ["*SECRET*", "*TOKEN*", "KIS_APP*"]
+
+[features]
+multi_agent = false
+shell_tool = true
+
+[tui]
+notifications = true
+
+[history]
+persistence = "save-all"
+max_bytes = 104857600  # 100 MiB

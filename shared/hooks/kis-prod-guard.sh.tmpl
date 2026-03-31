@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# KIS Prod Guard — PreToolUse hook (Bash)
+# /api/orders 포함 명령 시 실전투자(prod) 모드 차단
+#
+# stdin: {"tool_name": "...", "tool_input": {...}}
+# exit 0: 허용 / exit {{BLOCK_EXIT}} + stderr: 차단
+
+set -euo pipefail
+
+INPUT=$(cat)
+
+LOG_DIR="${{{PROJECT_DIR_VAR}}:-$(pwd)}/{{LOG_DIR}}"
+mkdir -p "$LOG_DIR"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+TODAY="${TIMESTAMP:0:10}"
+
+# tool_name 확인
+TOOL_NAME=$(python3 -c "
+import sys, json
+data = json.loads(sys.stdin.read())
+print(data.get('tool_name', ''))
+" <<< "$INPUT" 2>/dev/null || echo "")
+
+echo "[$TIMESTAMP] prod-guard  | tool: ${TOOL_NAME:-unknown}" >> "$LOG_DIR/kis-hooks-${TODAY}.log"
+
+if [[ "$TOOL_NAME" != "Bash" ]]; then
+    exit 0
+fi
+
+# command 추출
+COMMAND=$(python3 -c "
+import sys, json
+data = json.loads(sys.stdin.read())
+print(data.get('tool_input', {}).get('command', ''))
+" <<< "$INPUT" 2>/dev/null || echo "")
+
+# /api/orders 포함 여부 확인
+if ! echo "$COMMAND" | grep -q '/api/orders'; then
+    exit 0
+fi
+
+# auth.py로 현재 모드 확인
+AUTH_SCRIPT="${{{PROJECT_DIR_VAR}}:-$(pwd)}/{{AGENT_DIR}}/scripts/auth.py"
+
+if [[ ! -f "$AUTH_SCRIPT" ]]; then
+    # auth.py 없으면 통과 (스크립트 누락은 별도 문제)
+    exit 0
+fi
+
+MODE=$(uv run "$AUTH_SCRIPT" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.loads(sys.stdin.read())
+    print(data.get('mode', 'unknown'))
+except Exception:
+    print('unknown')
+" 2>/dev/null || echo "unknown")
+
+if [[ "$MODE" == "prod" ]]; then
+    echo "[KIS SAFETY] 실전투자(prod) 주문 감지!" >&2
+    echo "종목/수량/금액을 사용자에게 명시하고 확인을 받은 후 실행하세요." >&2
+    echo "확인 후 다시 시도하십시오." >&2
+    exit {{BLOCK_EXIT}}
+fi
+
+# vps 또는 기타 — 허용 (로그만)
+if [[ "$MODE" == "vps" ]]; then
+    echo "[$TIMESTAMP] GUARD  | mode: vps | /api/orders 허용" >> "$LOG_DIR/kis-trades-${TODAY}.log"
+fi
+
+exit 0

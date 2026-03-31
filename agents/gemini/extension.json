@@ -1,0 +1,13 @@
+{
+  "name": "kis-plugin",
+  "version": "1.0.0",
+  "description": "한국투자증권 Open API 전략 설계·백테스팅·주문 실행 플러그인",
+  "contextFileName": "AGENTS.md",
+  "mcpServers": {
+    "kis-backtest": {
+      "httpUrl": "http://127.0.0.1:3846/mcp",
+      "description": "KIS 전략 백테스팅 MCP 서버 — backtester 로컬 실행 필요 (bash backtester/scripts/start_mcp.sh)",
+      "timeout": 120000
+    }
+  }
+}

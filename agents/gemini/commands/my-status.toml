@@ -1,0 +1,20 @@
+description = "KIS 계좌 상태 조회 (잔고/보유종목/지수)"
+
+prompt = """
+KIS 계좌 상태를 조회해주세요. {{args}}
+
+1. `pwd`로 프로젝트 루트를 확인한다.
+2. `uv run <프로젝트루트>/.gemini/scripts/auth.py`를 실행하여 인증 상태를 확인한다.
+   - `authenticated`가 false면 "/auth 커맨드로 먼저 인증하세요"라고 안내하고 중단.
+3. 인자에 따라 `uv run <프로젝트루트>/.gemini/scripts/api_client.py <서브커맨드>`를 실행한다:
+   - 인자 없음 → `all`
+   - `잔고`, `balance` → `balance`
+   - `보유종목`, `holdings` → `holdings`
+   - `코스피`, `index` → `index`
+
+4. JSON 결과를 사용자 친화적 표로 정리한다 (천 단위 콤마, +/- 부호).
+5. 계좌번호는 마스킹된 값을 그대로 사용한다.
+6. 토큰, 앱키, 시크리트 등 민감 정보는 절대 출력하지 않는다.
+
+호출 내용을 바탕으로만 대답해야합니다.
+"""

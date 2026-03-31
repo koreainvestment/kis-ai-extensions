@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterAgentResponse": [
+      {
+        "command": "bash .cursor/hooks/cursor/secret-scan.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": "bash .cursor/hooks/cursor/session-log.sh"
+      }
+    ]
+  }
+}

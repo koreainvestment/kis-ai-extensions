@@ -1,0 +1,45 @@
+{
+  "name": "@koreainvestment/kis-quant-plugin",
+  "version": "0.1.0",
+  "description": "KIS (Korea Investment & Securities) trading plugin for AI coding agents — strategy design, backtesting, and order execution via natural language",
+  "keywords": [
+    "kis",
+    "korea-investment",
+    "trading",
+    "backtesting",
+    "ai-agent",
+    "claude-code",
+    "cursor",
+    "codex",
+    "gemini",
+    "mcp",
+    "quant",
+    "finance",
+    "investment",
+    "autotrade"
+  ],
+  "license": "MIT",
+  "author": "KISOpenAPI",
+  "bin": {
+    "kis-quant-plugin": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "shared/",
+    "agents/",
+    "assets/KIS-logo.png",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:unit": "node --test test/cli.unit.test.js",
+    "test:commands": "node --test test/cli.commands.test.js",
+    "smoke": "node test/smoke.js",
+    "pack:check": "npm pack --dry-run 2>&1",
+    "prepublishOnly": "npm test && npm run smoke && npm run pack:check"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "type": "commonjs"
+}

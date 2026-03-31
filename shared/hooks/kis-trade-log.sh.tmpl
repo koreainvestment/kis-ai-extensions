@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# KIS Trade Log — PostToolUse hook (Bash)
+# /api/orders 또는 /api/strategies/execute 포함 명령 실행 후 로그 기록
+#
+# stdin: {"tool_name": "...", "tool_input": {...}, "tool_response": {...}}
+# 항상 exit 0 (PostToolUse — 차단 아님, 로깅만)
+
+set -euo pipefail
+
+INPUT=$(cat)
+
+LOG_DIR="${{{PROJECT_DIR_VAR}}:-$(pwd)}/{{LOG_DIR}}"
+mkdir -p "$LOG_DIR"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+TODAY="${TIMESTAMP:0:10}"
+
+# tool_name 확인
+TOOL_NAME=$(python3 -c "
+import sys, json
+data = json.loads(sys.stdin.read())
+print(data.get('tool_name', ''))
+" <<< "$INPUT" 2>/dev/null || echo "")
+
+echo "[$TIMESTAMP] trade-log  | tool: ${TOOL_NAME:-unknown}" >> "$LOG_DIR/kis-hooks-${TODAY}.log"
+
+if [[ "$TOOL_NAME" != "Bash" ]]; then
+    exit 0
+fi
+
+# command 추출
+COMMAND=$(python3 -c "
+import sys, json
+data = json.loads(sys.stdin.read())
+print(data.get('tool_input', {}).get('command', ''))
+" <<< "$INPUT" 2>/dev/null || echo "")
+
+# /api/orders 또는 /api/strategies/execute 포함 여부 확인
+if ! echo "$COMMAND" | grep -qE '/api/(orders|strategies/execute)'; then
+    exit 0
+fi
+
+LOG_FILE="$LOG_DIR/kis-trades-${TODAY}.log"
+
+# 로그 타입 및 추출 정보 결정
+if echo "$COMMAND" | grep -q '/api/strategies/execute'; then
+    # 전략 실행 — 종목 코드와 전략 ID 추출
+    CODES=$(python3 -c "
+import re, sys
+cmd = '''$COMMAND'''
+m = re.search(r'\"codes\"\s*:\s*\[([^\]]+)\]', cmd)
+if m:
+    codes = re.findall(r'\"([^\"]+)\"', m.group(1))
+    print(','.join(codes))
+else:
+    print('unknown')
+" 2>/dev/null || echo "unknown")
+
+    STRATEGY=$(python3 -c "
+import re, sys
+cmd = '''$COMMAND'''
+m = re.search(r'\"strategy_id\"\s*:\s*\"([^\"]+)\"', cmd)
+print(m.group(1) if m else 'unknown')
+" 2>/dev/null || echo "unknown")
+
+    echo "[$TIMESTAMP] SIGNAL | cmd: POST /api/strategies/execute | codes: $CODES | strategy: $STRATEGY" >> "$LOG_FILE"
+
+elif echo "$COMMAND" | grep -q '/api/orders'; then
+    # 주문 실행 — 종목 코드, action, 수량 추출
+    CODE=$(python3 -c "
+import re, sys
+cmd = '''$COMMAND'''
+m = re.search(r'\"code\"\s*:\s*\"([^\"]+)\"', cmd)
+print(m.group(1) if m else 'unknown')
+" 2>/dev/null || echo "unknown")
+
+    ACTION=$(python3 -c "
+import re, sys
+cmd = '''$COMMAND'''
+m = re.search(r'\"action\"\s*:\s*\"([^\"]+)\"', cmd)
+print(m.group(1) if m else 'unknown')
+" 2>/dev/null || echo "unknown")
+
+    QTY=$(python3 -c "
+import re, sys
+cmd = '''$COMMAND'''
+m = re.search(r'\"quantity\"\s*:\s*(\d+)', cmd)
+print(m.group(1) if m else 'unknown')
+" 2>/dev/null || echo "unknown")
+
+    echo "[$TIMESTAMP] ORDER  | cmd: POST /api/orders | code: $CODE | action: $ACTION | qty: $QTY" >> "$LOG_FILE"
+fi
+
+exit 0

@@ -1,0 +1,32 @@
+---
+description: KIS Open API 트레이딩 플러그인 안전 규칙
+globs:
+alwaysApply: true
+---
+
+# KIS Trading Safety Rules
+
+## Data Source
+- KIS OpenAPI를 유일한 시세/계좌 데이터 소스로 취급한다.
+
+## Secret Protection
+- `appkey`, `appsecret`, access token, approval key를 코드에 하드코딩하지 않는다.
+- `~/KIS/config/kis_devlp.yaml`을 사용자 요청 없이 읽거나 출력하지 않는다.
+- 계좌번호는 마스킹 처리하여 표시한다.
+
+## Order Safety
+- 실전(prod) 주문 전 반드시 종목명, 수량, 예상금액을 사용자에게 보여주고 확인을 받는다.
+- 신호 강도 0.5 미만이면 주문을 실행하지 않는다.
+- 주문 전 현재 모드(vps/prod)를 반드시 고지한다.
+
+## Operational
+- 기본적으로 읽기 전용 확인(인증 상태, 헬스체크)을 먼저 수행한다.
+- `git push`는 사용자가 명시적으로 요청하지 않는 한 실행하지 않는다.
+- 백테스팅에는 MCP 엔드포인트 `http://127.0.0.1:3846/mcp`와 Docker 런타임이 필요하다.
+
+## Workflow
+- 전략 설계 → `kis-strategy-builder` skill 사용
+- 백테스팅/검증 → `kis-backtester` skill 사용
+- 신호/주문 → `kis-order-executor` skill 사용
+- 풀파이프라인 → `kis-team` skill 사용
+- 사용자 혼란/오류/정책 문의 → `kis-cs` skill 사용

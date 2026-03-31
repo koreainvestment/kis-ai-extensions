@@ -1,0 +1,63 @@
+{
+  "skills": { "enabled": true },
+  "hooksConfig": { "enabled": true },
+  "mcpServers": {
+    "kis-backtest": {
+      "httpUrl": "http://127.0.0.1:3846/mcp",
+      "timeout": 120000
+    }
+  },
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "name": "kis-secret-guard",
+          "command": "bash \"${{PROJECT_DIR_VAR}}/{{AGENT_DIR}}/hooks/kis-secret-guard.sh\"",
+          "description": "KIS secret 패턴 감지 및 차단"
+        }]
+      },
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "name": "kis-prod-guard",
+          "command": "bash \"${{PROJECT_DIR_VAR}}/{{AGENT_DIR}}/hooks/kis-prod-guard.sh\"",
+          "description": "실전투자 주문 안전장치"
+        }]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "name": "kis-trade-log",
+          "command": "bash \"${{PROJECT_DIR_VAR}}/{{AGENT_DIR}}/hooks/kis-trade-log.sh\"",
+          "description": "KIS API 거래 활동 로깅"
+        }]
+      },
+      {
+        "matcher": "mcp__kis-backtest",
+        "hooks": [{
+          "type": "command",
+          "name": "kis-mcp-log",
+          "command": "bash \"${{PROJECT_DIR_VAR}}/{{AGENT_DIR}}/hooks/kis-mcp-log.sh\"",
+          "description": "kis-backtest MCP 호출 로깅"
+        }]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "name": "kis-session-log",
+          "command": "bash \"${{PROJECT_DIR_VAR}}/{{AGENT_DIR}}/hooks/kis-trade-log.sh\"",
+          "description": "세션 종료 시 거래 로그 기록"
+        }]
+      }
+    ]
+  }
+}

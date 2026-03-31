@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# KIS MCP Log — PostToolUse hook (mcp__kis-backtest)
+# kis-backtest MCP 도구 호출 후 tool 이름 + 핵심 파라미터 경량 로깅
+#
+# stdin: {"tool_name": "mcp__kis-backtest__...", "tool_input": {...}}
+# 항상 exit 0 (PostToolUse — 차단 아님, 로깅만)
+
+LOG_DIR="${{{PROJECT_DIR_VAR}}:-$(pwd)}/{{LOG_DIR}}"
+mkdir -p "$LOG_DIR"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+TODAY="${TIMESTAMP:0:10}"
+LOG_FILE="$LOG_DIR/kis-mcp-${TODAY}.log"
+
+# tempfile 사용 — 대용량 tool_response(get_backtest_result 등) 안전 처리
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+cat > "$TMPFILE"
+
+python3 - "$TMPFILE" "$TIMESTAMP" >> "$LOG_FILE" 2>/dev/null <<'PYEOF'
+import sys, json
+
+input_file, timestamp = sys.argv[1], sys.argv[2]
+with open(input_file) as f:
+    data = json.load(f)
+
+tool = data.get('tool_name', '')
+args = data.get('tool_input', {})
+
+# mcp__kis-backtest__run_backtest_tool → run_backtest_tool
+short = tool.rsplit('__', 1)[-1] if '__' in tool else tool
+
+parts = [f'tool: {short}']
+
+if 'ticker' in args:
+    parts.append(f'ticker: {args["ticker"]}')
+if 'strategy' in args:
+    s = args['strategy']
+    if isinstance(s, str) and len(s) > 60:
+        s = s[:57] + '...'
+    parts.append(f'strategy: {s}')
+if 'strategy_id' in args:
+    parts.append(f'strategy_id: {args["strategy_id"]}')
+if 'symbols' in args:
+    syms = args['symbols']
+    parts.append(f'symbols: {",".join(syms) if isinstance(syms, list) else syms}')
+if 'job_id' in args:
+    parts.append(f'job_id: {args["job_id"]}')
+if 'yaml_content' in args:
+    parts.append('yaml: (provided)')
+
+print(f'[{timestamp}] MCP    | {" | ".join(parts)}')
+PYEOF
+
+exit 0

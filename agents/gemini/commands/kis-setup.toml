@@ -1,0 +1,19 @@
+description = "프로젝트 세팅 도우미 (환경 진단 + 자동 설치)"
+
+prompt = """
+KIS 프로젝트 환경을 진단하고 설정해주세요. {{args}}
+
+1. `pwd`로 프로젝트 루트를 확인한다.
+2. `uv run <프로젝트루트>/.gemini/scripts/setup_check.py <프로젝트루트>`를 실행하여 환경 진단 결과(JSON)를 받는다.
+3. 결과를 상태 표로 정리한다 (Python, uv, Node.js, Docker, KIS 설정, 의존성, Lean, MCP, 인증).
+4. `all_ok`이 true면 "모든 설정이 완료되었습니다!" — 종료.
+5. 실패 항목은 순서대로 수정한다:
+   - 사전 요구사항(prereqs) 실패 → 설치 방법 안내
+   - KIS 설정파일 없음 → 템플릿 안내 (직접 읽지 않음)
+   - P1 의존성 → `uv sync` + `pnpm install` + `.env.local` 생성 (없으면 `.env.example`에서 복사, `NEXT_PUBLIC_API_URL=http://localhost:8000` 필수)
+   - P2 의존성 → backtester `uv sync` + `pnpm install`
+   - Lean → `bash <프로젝트루트>/backtester/scripts/setup_lean_data.sh`
+   - MCP → `bash <프로젝트루트>/backtester/scripts/start_mcp.sh`
+   - 인증 → `/auth vps` 안내
+6. 최종 재진단 후 결과를 보여준다.
+"""

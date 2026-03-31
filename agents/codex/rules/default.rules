@@ -1,0 +1,7 @@
+prefix_rule(pattern=["uv", "run", ".codex/scripts/setup_check.py"], decision="allow")
+prefix_rule(pattern=["uv", "run", ".codex/scripts/auth.py"], decision="allow")
+prefix_rule(pattern=["uv", "run", ".codex/scripts/api_client.py"], decision="allow")
+prefix_rule(pattern=["/bin/zsh", "-lc", "cd strategy_builder && nohup uv run uvicorn backend.main:app --port 8000 >/tmp/strategy_builder_backend.log 2>&1 & echo $!"], decision="allow")
+prefix_rule(pattern=["uv", "run", "uvicorn"], decision="allow")
+prefix_rule(pattern=["curl", "-sS", "http://127.0.0.1:8000/api/strategies"], decision="allow")
+prefix_rule(pattern=["curl", "-sS", "http://127.0.0.1:8000/api/health"], decision="allow")

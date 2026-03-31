@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/kis-secret-guard.sh"}],
+        "description": "KIS secret 패턴 감지 및 차단"
+      },
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/kis-prod-guard.sh"}],
+        "description": "실전투자 주문 안전장치"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/kis-trade-log.sh"}],
+        "description": "KIS API 거래 활동 로깅"
+      },
+      {
+        "matcher": "mcp__kis-backtest",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/kis-mcp-log.sh"}],
+        "description": "kis-backtest MCP 호출 로깅"
+      }
+    ]
+  }
+}
