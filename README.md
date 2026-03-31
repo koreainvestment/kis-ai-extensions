@@ -1,3 +1,6 @@
+본 레포는 한국투자 OpenAPI를 AI 에이전트에서 활용하기 위한 확장 기능(extensions) 모음입니다.  
+현재 제공되는 주요 기능은 npm 패키지 `@koreainvestment/kis-quant-plugin` 형태로 배포됩니다.
+
 KIS Plugin은 [한국투자증권 Open API](https://github.com/koreainvestment/open-trading-api)의 **전략 설계 → 백테스팅 → 주문 실행** 파이프라인을 AI 코딩 에이전트에서 자연어로 조작할 수 있게 해주는 플러그인입니다.
 
 Claude Code, Cursor, Codex, Gemini CLI 등 주요 AI 에이전트에서 자연어로 전략 설계 → 백테스팅 → 주문 실행을 조작할 수 있게 해주는 플러그인입니다.
