@@ -1,3 +1,10 @@
+**[LLM Repository Guide]**
+
+ChatGPT, Claude 등 LLM(Large Language Model)과 AI 에이전트가 이 저장소를 보다 쉽게 탐색할 수 있도록 `llms.txt`를 제공합니다.
+- [`llms.txt`](./llms.txt)
+
+---
+
 본 레포는 한국투자 OpenAPI를 AI 에이전트에서 활용하기 위한 확장 기능(extensions) 모음입니다.  
 현재 제공되는 주요 기능은 npm 패키지 `@koreainvestment/kis-quant-plugin` 형태로 배포됩니다.
 

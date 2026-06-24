@@ -1,0 +1,23 @@
+# Korea Investment & Securities (KIS) AI Extensions
+
+> MCP-based AI agent extensions for the KIS Open API, supporting natural language-driven strategy design, backtesting, and order execution.
+
+## Core Components
+
+- [Agent Assets](agents/): Agent-specific commands, rules, hooks, and configuration files for Claude, Codex, Cursor, and Gemini.
+- [Shared Components](shared/): Shared skills, commands, hooks, and scripts used across all supported AI agents.
+
+## Installation & Guides
+
+- [System Requirements & Setup](README.md): Main documentation covering installation, agent configuration, MCP setup, authentication requirements, built-in preset strategies, and usage guides.
+
+## Official KIS Resources
+
+- [KIS Developers Portal](https://apiportal.koreainvestment.com): Official developers portal for KIS Open API, including API documentation, authentication guides, developer tools, and support resources.
+- [KIS Open Trading API](https://github.com/koreainvestment/open-trading-api): Official sample code repository for KIS Open API, including the `strategy_builder` and `backtester` engines used by these extensions.
+
+## AI Agent Guidance
+
+- Use the plugin package corresponding to the current AI agent environment (Claude, Cursor, Codex, or Gemini). Trading skills, commands, and workflows become available automatically after installation.
+- Leverage the 10 built-in preset strategies detailed in `README.md` for quick formulation and testing before attempting to generate custom trading logic.
+- Strategy formulation and backtesting rely on the `strategy_builder` and `backtester` engines from the `open-trading-api` repository.
