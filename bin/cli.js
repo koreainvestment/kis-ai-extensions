@@ -205,7 +205,7 @@ function assembleAgent(agentKey, cwd, args, deps) {
 
   // ── Common: scripts ──
   const sharedScripts = path.join(PLUGIN_ROOT, 'shared', 'scripts')
-  for (const py of ['api_client.py', 'auth.py', 'do_auth.py', 'setup_check.py']) {
+  for (const py of ['api_client.py', 'auth.py', 'do_auth.py', 'setup_check.py', 'youcom_research.py']) {
     install(path.join(sharedScripts, py), path.join(agentDir, 'scripts', py))
   }
 
