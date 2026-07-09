@@ -433,7 +433,8 @@ class TestDoResearch(unittest.TestCase):
             captured["headers"] = headers
             captured["data"] = data
             captured["method"] = method
-            return {"content": "요약", "sources": []}
+            # 실제 응답 형태: content/sources는 output 아래에 중첩됨
+            return {"output": {"content": "요약", "content_type": "text", "sources": []}}
 
         yr.do_research("삼성전자 전망", http=fake_http)
         self.assertEqual(captured["url"], "https://api.you.com/v1/research")
@@ -444,13 +445,41 @@ class TestDoResearch(unittest.TestCase):
         self.assertEqual(body["research_effort"], "lite")
 
     def test_content_and_sources_passthrough(self):
+        # 실제 응답 형태: {"output": {"content": ..., "sources": [{url,title,snippets}]}}
         def fake_http(url, headers, data=None, method="GET"):
-            return {"content": "결과 내용", "sources": [{"title": "T", "url": "https://u.com"}]}
+            return {
+                "output": {
+                    "content": "결과 내용 [[1]]",
+                    "content_type": "text",
+                    "sources": [
+                        {"url": "https://u.com", "title": "T", "snippets": ["일부 발췌"]},
+                    ],
+                }
+            }
 
         result = yr.do_research("q", http=fake_http)
         out = yr.format_research(result)
         self.assertIn("결과 내용", out)
         self.assertIn("T (https://u.com)", out)
+
+    def test_top_level_content_is_not_read(self):
+        # 회귀 방지: content/sources를 최상위에서 읽던 버그. 최상위에만 있고
+        # output 아래에 없으면 실패로 처리되어야 한다 (조용한 빈 결과 금지).
+        def fake_http(url, headers, data=None, method="GET"):
+            return {"content": "최상위 내용", "sources": [{"title": "X", "url": "https://x.com"}]}
+
+        result = yr.do_research("q", http=fake_http)
+        self.assertIn("error", result)
+        self.assertNotIn("content", result)
+
+    def test_200_with_empty_content_is_failure(self):
+        # 200이지만 output.content가 비면 error를 반환해 main이 non-zero로 종료하도록 함.
+        for raw in ({}, {"output": {}}, {"output": {"content": ""}},
+                    {"output": {"content": "   "}}, {"output": {"content": None}}):
+            def fake_http(url, headers, data=None, method="GET", _r=raw):
+                return _r
+            result = yr.do_research("q", http=fake_http)
+            self.assertIn("error", result, f"expected error for raw={raw!r}")
 
     def test_missing_key(self):
         with mock.patch.dict("os.environ", {}, clear=False):
@@ -486,10 +515,13 @@ class TestDoResearch(unittest.TestCase):
         self.assertIn("해석할 수 없습니다", result["error"])
 
     def test_non_string_query_no_crash(self):
+        # 적대적 쿼리로도 예외 없이 dict를 반환해야 한다 (여기선 빈 응답을
+        # 흘려 content 부재로 error가 나지만, 크래시하지 않는 것이 핵심).
         def fake_http(url, headers, data=None, method="GET"):
-            return {}
+            return {"output": {"content": "ok", "sources": []}}
         for q in [12345, None, ["a"]]:
             result = yr.do_research(q, http=fake_http)
+            self.assertIsInstance(result, dict)
             self.assertNotIn("error", result)
 
 
@@ -526,7 +558,7 @@ class TestKeyNeverLeaks(unittest.TestCase):
 
     def test_success_research(self):
         def fake_http(url, headers, data=None, method="GET"):
-            return {"content": "c", "sources": []}
+            return {"output": {"content": "c", "sources": []}}
         self._assert_no_leak(yr.do_research("q", http=fake_http))
 
     def test_missing_key_path(self):
@@ -571,6 +603,72 @@ class TestKeyNeverLeaks(unittest.TestCase):
         result = yr.do_search("q", http=fake_http)
         self.assertEqual(seen["headers"]["X-API-Key"], FAKE_KEY)
         self._assert_no_leak(result)
+
+
+# ---------------------------------------------------------------------------
+# _http_request (실제 전송 계층) - User-Agent 주입 + research 타임아웃
+# ---------------------------------------------------------------------------
+
+class TestHttpRequestTransport(unittest.TestCase):
+    """api.you.com이 Python 기본 UA를 403으로 막으므로 브라우저 UA가 반드시
+    모든 요청에 포함되어야 한다. urlopen을 모킹해 전송된 Request를 캡처한다."""
+
+    def _capture(self, url, headers, data=None, method="GET"):
+        captured = {}
+
+        class FakeResp:
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *a):
+                return False
+
+            def read(self_inner):
+                return b"{}"
+
+        def fake_urlopen(req, context=None, timeout=None):
+            captured["req"] = req
+            captured["timeout"] = timeout
+            return FakeResp()
+
+        with mock.patch.object(yr.urllib.request, "urlopen", fake_urlopen):
+            yr._http_request(url, headers, data, method)
+        return captured
+
+    def test_user_agent_present_on_search(self):
+        cap = self._capture(yr.SEARCH_URL + "?query=q", {"X-API-Key": FAKE_KEY})
+        req = cap["req"]
+        # urllib normalizes header keys to Capitalized form (User-agent)
+        ua = req.get_header("User-agent")
+        self.assertIsNotNone(ua)
+        self.assertIn("Mozilla/5.0", ua)
+        self.assertNotIn("Python-urllib", ua)
+
+    def test_user_agent_present_on_research(self):
+        cap = self._capture(yr.RESEARCH_URL, {"X-API-Key": FAKE_KEY}, b"{}", "POST")
+        ua = cap["req"].get_header("User-agent")
+        self.assertIn("Mozilla/5.0", ua)
+
+    def test_api_key_header_preserved_alongside_ua(self):
+        cap = self._capture(yr.SEARCH_URL, {"X-API-Key": FAKE_KEY})
+        self.assertEqual(cap["req"].get_header("X-api-key"), FAKE_KEY)
+
+    def test_research_uses_longer_timeout(self):
+        cap = self._capture(yr.RESEARCH_URL, {"X-API-Key": FAKE_KEY}, b"{}", "POST")
+        self.assertEqual(cap["timeout"], yr.RESEARCH_TIMEOUT_SECONDS)
+
+    def test_search_uses_default_timeout(self):
+        cap = self._capture(yr.SEARCH_URL + "?query=q", {"X-API-Key": FAKE_KEY})
+        self.assertEqual(cap["timeout"], yr.TIMEOUT_SECONDS)
+
+
+class TestTimeoutSelection(unittest.TestCase):
+    def test_timeout_for_research(self):
+        self.assertEqual(yr._timeout_for(yr.RESEARCH_URL), yr.RESEARCH_TIMEOUT_SECONDS)
+        self.assertGreater(yr.RESEARCH_TIMEOUT_SECONDS, yr.TIMEOUT_SECONDS)
+
+    def test_timeout_for_search(self):
+        self.assertEqual(yr._timeout_for(yr.SEARCH_URL + "?query=q"), yr.TIMEOUT_SECONDS)
 
 
 if __name__ == "__main__":

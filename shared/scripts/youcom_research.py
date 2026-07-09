@@ -29,6 +29,16 @@ RESEARCH_URL = "https://api.you.com/v1/research"
 DEFAULT_COUNT = 10
 MAX_COUNT = 20
 TIMEOUT_SECONDS = 15
+# research/lite는 응답까지 수십 초가 걸릴 수 있어 검색보다 긴 타임아웃을 둔다.
+RESEARCH_TIMEOUT_SECONDS = 120
+
+# api.you.com은 Cloudflare 뒤에 있어 Python 기본 User-Agent(Python-urllib/*)를
+# 403으로 차단한다. 브라우저 형태의 UA를 붙여 모든 요청에서 통과시킨다
+# (search 호스트에는 무해, research 호스트에는 필수).
+BROWSER_UA = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
 
 ERR_NO_KEY = (
     "YDC_API_KEY 환경변수가 설정되지 않았습니다. "
@@ -86,11 +96,18 @@ def _clean_error(exc: BaseException) -> str:
 
 def _http_request(url: str, headers: dict, data: bytes | None = None, method: str = "GET") -> dict:
     """실제 네트워크 호출. 성공 시 파싱된 JSON dict 반환, 실패 시 예외 발생."""
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    merged = {"User-Agent": BROWSER_UA}
+    merged.update(headers or {})
+    req = urllib.request.Request(url, data=data, headers=merged, method=method)
     ctx = ssl.create_default_context()
-    with urllib.request.urlopen(req, context=ctx, timeout=TIMEOUT_SECONDS) as resp:
+    with urllib.request.urlopen(req, context=ctx, timeout=_timeout_for(url)) as resp:
         body = resp.read().decode("utf-8")
     return json.loads(body) if body.strip() else {}
+
+
+def _timeout_for(url: str) -> int:
+    """research 호스트는 응답이 느리므로 더 긴 타임아웃을 사용한다."""
+    return RESEARCH_TIMEOUT_SECONDS if str(url).startswith(RESEARCH_URL) else TIMEOUT_SECONDS
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +176,19 @@ def do_research(query, http=_http_request) -> dict:
 
     if not isinstance(raw, dict):
         return {"error": "응답 형식이 올바르지 않습니다."}
-    return {"content": raw.get("content"), "sources": raw.get("sources")}
+
+    # 실제 research 응답 형태: {"output": {"content": str, "sources": [...]}}
+    output = raw.get("output")
+    if not isinstance(output, dict):
+        output = {}
+    content = output.get("content")
+    sources = output.get("sources")
+
+    # 200이라도 사용 가능한 content가 없으면 실패로 처리한다 (조용한 exit 0 방지).
+    if not (isinstance(content, str) and content.strip()):
+        return {"error": "리서치 결과를 가져오지 못했습니다."}
+
+    return {"content": content, "sources": sources}
 
 
 # ---------------------------------------------------------------------------
