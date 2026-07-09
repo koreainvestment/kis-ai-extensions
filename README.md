@@ -70,8 +70,8 @@ uv sync
 **Claude Code** (`npx @koreainvestment/kis-quant-plugin init --agent claude`)
 ```
 .claude/
-  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py, create_settings.sh
-  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-team, kis-cs
+  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py, youcom_research.py, create_settings.sh
+  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-research, kis-team, kis-cs
   commands/    # auth.md, kis-setup.md, kis-help.md, my-status.md
   hooks/       # kis-secret-guard.sh, kis-prod-guard.sh, kis-trade-log.sh, kis-mcp-log.sh, hooks.json
   status_lines/  # kis_status_line.py
@@ -83,8 +83,8 @@ AGENTS.md      # 에이전트 가이드
 **Cursor** (`npx @koreainvestment/kis-quant-plugin init --agent cursor`)
 ```
 .cursor/
-  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py
-  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-team, kis-cs
+  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py, youcom_research.py
+  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-research, kis-team, kis-cs
   commands/    # auth.md, kis-setup.md, kis-help.md, my-status.md
   hooks/       # cursor/secret-scan.sh, cursor/session-log.sh, hooks.json
   rules/       # kis-safety.mdc
@@ -96,8 +96,8 @@ AGENTS.md
 **Codex** (`npx @koreainvestment/kis-quant-plugin init --agent codex`)
 ```
 .codex/
-  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py
-  skills/      # kis-strategy-builder, ..., kis-cs, auth, kis-setup, kis-help, my-status
+  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py, youcom_research.py
+  skills/      # kis-strategy-builder, ..., kis-research, kis-cs, auth, kis-setup, kis-help, my-status
   config.toml  # MCP 서버 + skill 경로 설정
   rules/       # default.rules
   logs/
@@ -108,8 +108,8 @@ AGENTS.md
 **Gemini CLI** (`npx @koreainvestment/kis-quant-plugin init --agent gemini`)
 ```
 .gemini/
-  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py
-  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-team, kis-cs
+  scripts/     # api_client.py, auth.py, do_auth.py, setup_check.py, youcom_research.py
+  skills/      # kis-strategy-builder, kis-backtester, kis-order-executor, kis-research, kis-team, kis-cs
   commands/    # auth.toml, kis-setup.toml, kis-help.toml, my-status.toml
   hooks/       # kis-secret-guard.sh, kis-prod-guard.sh, kis-trade-log.sh, kis-mcp-log.sh
   settings.json  # MCP + hooks 설정
@@ -129,6 +129,7 @@ AGENTS.md
 
 | Skill | 트리거 예시 | 설명 |
 |-------|------------|------|
+| **kis-research** | "종목 리서치", "관련 뉴스 조사", "이 종목 요즘 어때" | You.com 검색/리서치로 종목·시장·뉴스 조사 (조회 전용) |
 | **kis-strategy-builder** | "전략 만들어줘", "RSI+MACD 조합" | 10개 프리셋 + 80개 지표로 `.kis.yaml` 전략 설계 |
 | **kis-backtester** | "백테스트 해줘", "수익률 확인" | Lean 엔진 백테스팅, 파라미터 최적화, HTML 리포트 |
 | **kis-order-executor** | "신호 확인해줘", "모의투자 실행" | BUY/SELL/HOLD 신호 확인 후 모의/실전 주문 |
